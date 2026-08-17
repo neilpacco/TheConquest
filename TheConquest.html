@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegon's Conquest | Tactical Campaign Portal</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --card-bg: #141419;
+      --card-border: #2a2a35;
+      --accent-red: #9e1b1b;
+      --accent-red-glow: rgba(158, 27, 27, 0.4);
+      --accent-gold: #c9a050;
+      --accent-gold-muted: rgba(201, 160, 80, 0.15);
+      --text-main: #e2e2e8;
+      --text-muted: #8e8e9e;
+      --font-heading: 'Cinzel', 'Georgia', serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      padding-bottom: 60px;
+    }
+
+    /* Header & Hero */
+    header {
+      background: linear-gradient(180deg, rgba(15, 5, 5, 0.95) 0%, rgba(10, 10, 12, 1) 100%),
+                  radial-gradient(circle at top, var(--accent-red-glow), transparent 70%);
+      border-bottom: 1px solid var(--card-border);
+      padding: 40px 20px 30px;
+      text-align: center;
+    }
+
+    .sigil {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      color: var(--accent-gold);
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .motto {
+      color: var(--accent-red);
+      font-style: italic;
+      font-weight: 600;
+      letter-spacing: 3px;
+      margin-top: 5px;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 30px 0 10px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 22px;
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--accent-gold);
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-red);
+      color: #fff;
+      border-color: var(--accent-red);
+      box-shadow: 0 0 12px var(--accent-red-glow);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease-in-out forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Campaign Map Controls & Styling */
+    #map-container {
+      margin-top: 25px;
+      position: relative;
+    }
+
+    .map-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      background: var(--card-bg);
+      padding: 12px 18px;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-family: var(--font-heading);
+      font-size: 0.85rem;
+      color: var(--accent-gold);
+      margin-right: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .filter-btn {
+      background: var(--bg-dark);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--accent-gold);
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-gold);
+      color: #000;
+      border-color: var(--accent-gold);
+      font-weight: 700;
+    }
+
+    #westeros-map {
+      width: 100%;
+      height: 620px;
+      background-color: #060709;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Leaflet Custom Marker Pins & Popups */
+    .dragon-marker-pin {
+      background: var(--accent-red);
+      color: #fff;
+      border: 1px solid var(--accent-gold);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 0 10px var(--accent-red-glow);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .dragon-marker-pin:hover {
+      transform: scale(1.2);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--card-bg) !important;
+      color: var(--text-main) !important;
+      border: 1px solid var(--accent-gold) !important;
+      border-radius: 6px !important;
+      box-shadow: 0 0 15px rgba(0,0,0,0.9) !important;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--card-bg) !important;
+      border: 1px solid var(--accent-gold) !important;
+    }
+
+    /* Animated Polyline Campaign Route */
+    @keyframes marchDash {
+      from { stroke-dashoffset: 100; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .conquest-path-animated {
+      stroke: var(--accent-gold);
+      stroke-dasharray: 8, 8;
+      animation: marchDash 3s linear infinite;
+      filter: drop-shadow(0px 0px 5px rgba(201, 160, 80, 0.7));
+    }
+
+    /* Timeline View */
+    .timeline {
+      position: relative;
+      margin: 30px 0;
+      padding-left: 20px;
+      border-left: 2px solid var(--card-border);
+    }
+
+    .timeline-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 25px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .timeline-card:hover {
+      transform: translateX(5px);
+      border-color: var(--accent-gold);
+    }
+
+    .timeline-card::before {
+      content: '';
+      position: absolute;
+      left: -27px;
+      top: 24px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      box-shadow: 0 0 8px var(--accent-gold);
+    }
+
+    .date-badge {
+      display: inline-block;
+      background: var(--accent-gold-muted);
+      color: var(--accent-gold);
+      font-size: 0.8rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-bottom: 8px;
+    }
+
+    .event-title {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    /* Grid Layouts for Kingdoms & Dragons */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      color: var(--accent-gold);
+    }
+
+    .status-tag {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .status-conquered { background: rgba(158, 27, 27, 0.3); color: #ff6b6b; border: 1px solid var(--accent-red); }
+    .status-submitted { background: rgba(201, 160, 80, 0.2); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+    .status-unbowed { background: rgba(46, 125, 50, 0.3); color: #81c784; border: 1px solid #2e7d32; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      margin-bottom: 6px;
+    }
+
+    .stat-label { color: var(--text-muted); }
+    .stat-value { font-weight: 600; }
+
+    /* Stat Bar for Dragons */
+    .bar-container {
+      background: #202028;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+
+    .bar-fill {
+      background: linear-gradient(90deg, var(--accent-gold), var(--accent-red));
+      height: 100%;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-gold);
+      border-radius: 8px;
+      max-width: 600px;
+      width: 100%;
+      padding: 25px;
+      position: relative;
+      box-shadow: 0 0 25px rgba(0,0,0,0.9);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    .modal-close:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="sigil">🐉</div>
+    <h1>Aegon's Conquest</h1>
+    <div class="motto">Fire and Blood — 2 BC to 1 AC</div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('map-tab', this)">Campaign Map</button>
+      <button class="tab-btn" onclick="switchTab('timeline', this)">Campaign Timeline</button>
+      <button class="tab-btn" onclick="switchTab('kingdoms', this)">Kingdom Matrix</button>
+      <button class="tab-btn" onclick="switchTab('dragons', this)">Dragon Roster</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- TAB 1: CAMPAIGN MAP -->
+    <section id="map-tab" class="tab-content active">
+      <div id="map-container">
+        
+        <!-- Filter Bar -->
+        <div class="map-filter-bar">
+          <span class="filter-label">Filter Route by Year:</span>
+          <button class="filter-btn active" onclick="filterByYear('ALL', this)">All Years</button>
+          <button class="filter-btn" onclick="filterByYear('2 BC', this)">2 BC</button>
+          <button class="filter-btn" onclick="filterByYear('1 BC', this)">1 BC</button>
+          <button class="filter-btn" onclick="filterByYear('1 AC', this)">1 AC</button>
+        </div>
+
+        <div id="westeros-map"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: TIMELINE -->
+    <section id="timeline" class="tab-content">
+      <div class="timeline">
+        <div class="timeline-card" onclick="openModal('Landing at Blackwater', '2 BC', 'Aegon Targaryen lands at the mouth of the Blackwater Rush with under 3,000 men. He constructs a timber fort (the future Aegonfort) and establishes his initial foothold over local river lords.')">
+          <span class="date-badge">2 BC</span>
+          <h3 class="event-title">Landing at Blackwater</h3>
+          <p style="color: var(--text-muted);">Aegon lands with ~3,000 men and claims sovereign rule over Westeros.</p>
+        </div>
+
+        <div class="timeline-card" onclick="openModal('Burning of Harrenhal', '2 BC', 'King Harren the Black refuses to yield inside his massive stone fortress. Balerion the Black Dread flies above the reach of arrows and incinerates the castle towers, destroying House Hoare.')">
+          <span class="date-badge">2 BC</span>
+          <h3 class="event-title">Burning of Harrenhal</h3>
+          <p style="color: var(--text-muted);">Balerion melts Harrenhal; extinction of House Hoare; House Tully appointed Lord Paramount.</p>
+        </div>
+
+        <div class="timeline-card" onclick="openModal('Field of Fire', '1 BC', 'The combined armies of the Reach (Mern IX) and the Rock (Loren I) field 55,000 men. Aegon, Visenya, and Rhaenys deploy all three dragons simultaneously for the first and only time, killing over 4,000 enemy forces in minutes.')">
+          <span class="date-badge">1 BC</span>
+          <h3 class="event-title">The Field of Fire</h3>
+          <p style="color: var(--text-muted);">All three dragons deployed simultaneously; House Gardener eliminated; House Lannister submits.</p>
+        </div>
+
+        <div class="timeline-card" onclick="openModal('Submission of the North', '1 BC', 'King Torrhen Stark marches 30,000 Northerners south. Seeing the dragon power across the Trident, Torrhen chooses peace and kneels to save his people, earning the title The King Who Knelt.')">
+          <span class="date-badge">1 BC</span>
+          <h3 class="event-title">Submission of the North</h3>
+          <p style="color: var(--text-muted);">Torrhen Stark kneels at the Trident; House Stark named Wardens of the North.</p>
+        </div>
+
+        <div class="timeline-card" onclick="openModal('Coronation at Oldtown', '1 AC', 'Aegon enters Oldtown peacefully. The High Septon anoints him with holy oils at the Starry Sept, crowning him Aegon I Targaryen, Lord of the Seven Kingdoms.')">
+          <span class="date-badge">1 AC</span>
+          <h3 class="event-title">Coronation at Oldtown</h3>
+          <p style="color: var(--text-muted);">The High Septon anoints Aegon as sovereign ruler of the unified realm.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: KINGDOMS -->
+    <section id="kingdoms" class="tab-content">
+      <div class="grid-container">
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">The Riverlands</span>
+              <span class="status-tag status-conquered">Conquered</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Pre-Conquest Ruler:</span> <span class="stat-value">Harren Hoare</span></div>
+            <div class="stat-row"><span class="stat-label">Post-Conquest Ruler:</span> <span class="stat-value">Edmyn Tully</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">The Reach</span>
+              <span class="status-tag status-conquered">Conquered</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Pre-Conquest Ruler:</span> <span class="stat-value">Mern IX Gardener</span></div>
+            <div class="stat-row"><span class="stat-label">Post-Conquest Ruler:</span> <span class="stat-value">Harlan Tyrell</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">The Westerlands</span>
+              <span class="status-tag status-submitted">Submitted</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Pre-Conquest Ruler:</span> <span class="stat-value">Loren I Lannister</span></div>
+            <div class="stat-row"><span class="stat-label">Post-Conquest Ruler:</span> <span class="stat-value">Loren I Lannister</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">The North</span>
+              <span class="status-tag status-submitted">Submitted</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Pre-Conquest Ruler:</span> <span class="stat-value">Torrhen Stark</span></div>
+            <div class="stat-row"><span class="stat-label">Post-Conquest Ruler:</span> <span class="stat-value">Torrhen Stark</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">Dorne</span>
+              <span class="status-tag status-unbowed">Unbowed</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Pre-Conquest Ruler:</span> <span class="stat-value">Meria Martell</span></div>
+            <div class="stat-row"><span class="stat-label">Post-Conquest Ruler:</span> <span class="stat-value">House Martell</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: DRAGONS -->
+    <section id="dragons" class="tab-content">
+      <div class="grid-container">
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">Balerion</span>
+              <span class="stat-value" style="color: var(--accent-gold);">The Black Dread</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Primary Rider:</span> <span class="stat-value">Aegon Targaryen</span></div>
+            <div class="stat-row"><span class="stat-label">Flame Color:</span> <span class="stat-value">Black & Gold</span></div>
+            <div class="stat-label" style="margin-top: 10px;">Combat Scale & Power</div>
+            <div class="bar-container"><div class="bar-fill" style="width: 100%;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">Vhagar</span>
+              <span class="stat-value" style="color: var(--accent-gold);">Bronze & Green</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Primary Rider:</span> <span class="stat-value">Visenya Targaryen</span></div>
+            <div class="stat-row"><span class="stat-label">Flame Color:</span> <span class="stat-value">Bronze Heat</span></div>
+            <div class="stat-label" style="margin-top: 10px;">Combat Scale & Power</div>
+            <div class="bar-container"><div class="bar-fill" style="width: 82%;"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <div class="card-header">
+              <span class="card-title">Meraxes</span>
+              <span class="stat-value" style="color: var(--accent-gold);">Silver & Golden Eyes</span>
+            </div>
+            <div class="stat-row"><span class="stat-label">Primary Rider:</span> <span class="stat-value">Rhaenys Targaryen</span></div>
+            <div class="stat-row"><span class="stat-label">Flame Color:</span> <span class="stat-value">Silver Fire</span></div>
+            <div class="stat-label" style="margin-top: 10px;">Combat Scale & Power</div>
+            <div class="bar-container"><div class="bar-fill" style="width: 78%;"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL OVERLAY -->
+  <div id="eventModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-content">
+      <button class="modal-close" onclick="forceCloseModal()">&times;</button>
+      <span id="modalDate" class="date-badge">2 BC</span>
+      <h2 id="modalTitle" class="event-title" style="margin-top: 8px;">Event Title</h2>
+      <p id="modalBody" style="margin-top: 15px; color: var(--text-main);">Details go here...</p>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    let mapInitialized = false;
+    let map = null;
+
+    /* Tab Switcher Logic */
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      if (btnElement) {
+        btnElement.classList.add('active');
+      } else {
+        event.currentTarget.classList.add('active');
+      }
+      
+      document.getElementById(tabId).classList.add('active');
+
+      // Trigger map resize calculation when switching to map tab
+      if (tabId === 'map-tab' && mapInitialized && map) {
+        setTimeout(() => map.invalidateSize(), 100);
+      }
+    }
+
+    /* Modal Logic */
+    function openModal(title, date, text) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalDate').innerText = date;
+      document.getElementById('modalBody').innerText = text;
+      document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    function closeModal(e) {
+      if (e.target.id === 'eventModal') {
+        document.getElementById('eventModal').style.display = 'none';
+      }
+    }
+
+    function forceCloseModal() {
+      document.getElementById('eventModal').style.display = 'none';
+    }
+
+    /* Leaflet Map Initialization */
+    map = L.map('westeros-map', {
+      crs: L.CRS.Simple,
+      minZoom: -1,
+      maxZoom: 2,
+      zoomSnap: 0.5
+    });
+
+    const bounds = [[0, 0], [1000, 800]];
+    const mapUrl = 'https://cdna.artstation.com/p/assets/images/images/045/687/784/large/tyrone-mojberg-westeros.jpg?1643292121';
+    
+    L.imageOverlay(mapUrl, bounds).addTo(map);
+    map.fitBounds(bounds);
+    mapInitialized = true;
+
+    const markerLayerGroup = L.layerGroup().addTo(map);
+    const pathLayerGroup = L.layerGroup().addTo(map);
+
+    function createDragonPin() {
+      return L.divIcon({
+        className: 'custom-pin',
+        html: `<div class="dragon-marker-pin">🐉</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    }
+
+    const campaignBattles = [
+      {
+        order: 1,
+        name: "Landing at Blackwater",
+        date: "2 BC",
+        coords: [320, 490],
+        desc: "Aegon Targaryen lands with ~3,000 men and constructs the Aegonfort."
+      },
+      {
+        order: 2,
+        name: "Burning of Harrenhal",
+        date: "2 BC",
+        coords: [390, 430],
+        desc: "Balerion incinerates King Harren the Black inside his stone towers."
+      },
+      {
+        order: 3,
+        name: "Submission at the Trident",
+        date: "1 BC",
+        coords: [430, 430],
+        desc: "King Torrhen Stark kneels to save Winterfell and the Northern army."
+      },
+      {
+        order: 4,
+        name: "The Field of Fire",
+        date: "1 BC",
+        coords: [300, 330],
+        desc: "All three dragons incinerate the combined host of the Reach and the Rock."
+      },
+      {
+        order: 5,
+        name: "Coronation at Oldtown",
+        date: "1 AC",
+        coords: [130, 295],
+        desc: "High Septon crowns Aegon as Lord of the Seven Kingdoms."
+      }
+    ];
+
+    /* Map Filter & Render Logic */
+    function renderMapElements(selectedYear = 'ALL') {
+      markerLayerGroup.clearLayers();
+      pathLayerGroup.clearLayers();
+
+      const activeBattles = campaignBattles.filter(battle => 
+        selectedYear === 'ALL' || battle.date === selectedYear
+      );
+
+      // Add Battle Markers
+      activeBattles.forEach(battle => {
+        const marker = L.marker(battle.coords, { icon: createDragonPin() });
+        
+        marker.bindPopup(`
+          <div style="font-family: var(--font-body);">
+            <span style="color:var(--accent-gold); font-size:0.75rem; font-weight:bold;">${battle.date} — Stage ${battle.order}</span>
+            <h4 style="font-family:var(--font-heading); color:#fff; margin:2px 0 6px;">${battle.name}</h4>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">${battle.desc}</p>
+          </div>
+        `);
+
+        markerLayerGroup.addLayer(marker);
+      });
+
+      // Draw Animated Route Polyline
+      if (activeBattles.length >= 2) {
+        const routeCoords = activeBattles.map(b => b.coords);
+        const animatedPolyline = L.polyline(routeCoords, {
+          className: 'conquest-path-animated',
+          weight: 3.5,
+          opacity: 0.9
+        });
+
+        pathLayerGroup.addLayer(animatedPolyline);
+      }
+    }
+
+    function filterByYear(year, btnElement) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      btnElement.classList.add('active');
+      renderMapElements(year);
+    }
+
+    // Initial Map Render
+    renderMapElements('ALL');
+  </script>
+</body>
+</html>
